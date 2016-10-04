@@ -13,3 +13,6 @@
 [submodule "user/sysroot"]
 	path = user/sysroot
 	url = https://github.com/W4118/binary-hmwk3.git
+[submodule "tools/boot.img"]
+	path = tools/boot.img
+	url = https://github.com/W4118/bootimg.git
