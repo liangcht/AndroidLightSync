@@ -1,6 +1,6 @@
 /*
  * Columbia University
- * COMS W4118 Fall 2015
+ * COMS W4118 Fall 2016
  * Homework 3
  *
  */
