@@ -1,0 +1,12 @@
+[submodule "user/aosp/hardware/libhardware"]
+	path = user/aosp/hardware/libhardware
+	url = https://android.googlesource.com/platform/hardware/libhardware
+[submodule "user/aosp/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9"]
+	path = user/aosp/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9
+	url = https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9
+[submodule "user/aosp/system/core"]
+	path = user/aosp/system/core
+	url = https://android.googlesource.com/platform/system/core
+[submodule "user/cm/system/core"]
+	path = user/cm/system/core
+	url = https://github.com/CyanogenMod/android_system_core.git
