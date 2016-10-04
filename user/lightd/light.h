@@ -18,4 +18,9 @@ struct light_intensity{
 	int cur_intensity;
 };
 
+struct event_requirements {
+	int req_intensity;
+	int frequency;
+};
+
 #endif
