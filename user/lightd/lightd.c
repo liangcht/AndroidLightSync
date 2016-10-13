@@ -25,7 +25,7 @@ static int effective_sensor = -1;
 static int open_sensors(struct sensors_module_t **hw_module,
 			struct sensors_poll_device_t **poll_device);
 static void enumerate_sensors(const struct sensors_module_t *sensors);
-static int poll_sensor_data_emulator(void);
+static float poll_sensor_data_emulator(void);
 static int poll_sensor_data(struct sensors_poll_device_t *sensors_device);
 
 
