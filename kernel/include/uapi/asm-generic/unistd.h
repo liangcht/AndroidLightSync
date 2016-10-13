@@ -659,7 +659,18 @@ __SC_COMP(__NR_recvmmsg, sys_recvmmsg, compat_sys_recvmmsg)
  * Architectures may provide up to 16 syscalls of their own
  * starting with this value.
  */
-#define __NR_arch_specific_syscall 244
+#define __NR_set_light_intensity 244
+__SYSCALL(__NR_set_light_intensity, sys_set_light_intensity)
+#define __NR_get_light_intensity 245
+__SYSCALL(__NR_get_light_intensity, sys_get_light_intensity)
+#define __NR_light_evt_create 246
+__SYSCALL(__NR_light_evt_create, sys_light_evt_create)
+#define __NR_light_evt_wait 247
+__SYSCALL(__NR_light_evt_wait, sys_light_evt_wait)
+#define __NR_light_evt_signal 248
+__SYSCALL(__NR_light_evt_signal, sys_light_evt_signal)
+#define __NR_light_evt_destroy 249
+__SYSCALL(__NR_light_evt_destroy, sys_light_evt_destroy)
 
 #define __NR_wait4 260
 __SC_COMP(__NR_wait4, sys_wait4, compat_sys_wait4)
