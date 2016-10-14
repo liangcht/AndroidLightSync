@@ -94,7 +94,8 @@ static int poll_sensor_data(struct sensors_poll_device_t *sensors_device)
 	/* emulation */
 		cur_intensity = poll_sensor_data_emulator();
 		cur_light_intensity.cur_intensity = cur_intensity * 100;
-		syscall(__NR_set_light_intensity, &cur_light_intensity);
+		//syscall(__NR_set_light_intensity, &cur_light_intensity);
+		syscall(__NR_light_evt_signal, &cur_light_intensity);
 		printf("%f\n", cur_intensity);
 	}
 	else{
@@ -109,7 +110,8 @@ static int poll_sensor_data(struct sensors_poll_device_t *sensors_device)
 				continue;
 			cur_intensity = buffer[i].light;
 			cur_light_intensity.cur_intensity = cur_intensity * 100;
-			syscall(__NR_set_light_intensity, &cur_light_intensity);
+			//syscall(__NR_set_light_intensity, &cur_light_intensity);
+			syscall(__NR_light_evt_signal, &cur_light_intensity);
 			printf("%f\n", cur_intensity);
 		}
 	}

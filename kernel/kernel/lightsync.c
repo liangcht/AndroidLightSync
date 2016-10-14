@@ -78,7 +78,7 @@ SYSCALL_DEFINE1(light_evt_create,
 	new_event->event_id = id_count++;
 	list_add(&new_event->event_list_head, &events);
 	spin_unlock(&events_lock);
-	return 0;
+	return new_event->event_id;
 }
 
 SYSCALL_DEFINE1(light_evt_wait, int, event_id)
