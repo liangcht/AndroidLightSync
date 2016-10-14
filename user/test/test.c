@@ -14,13 +14,13 @@ int main (void)
 	struct event_requirements medium;
 	struct event_requirements high;
 
-	low.req_intensity = 100;
+	low.req_intensity = 100*100;
 	low.frequency = 10;
 
-	medium.req_intensity = 1000;
+	medium.req_intensity = 1000*100;
 	medium.frequency  = 10;
 
-	high.req_intensity = 10000;
+	high.req_intensity = 10000*100;
 	high.frequency = 10;
 
 	int n = 3;
@@ -54,7 +54,7 @@ int main (void)
 	do {
 		w_pid = wait(&status);
 		n--;
-	} while (n > 0 && !WIFEXITED(status) && !WIFSIGNALED(status));
-
+	//} while (n > 0 && !WIFEXITED(status) && !WIFSIGNALED(status));
+	} while (n > 0);
 	return 0;
 }
