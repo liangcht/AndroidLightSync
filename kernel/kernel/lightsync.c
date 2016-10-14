@@ -120,9 +120,9 @@ SYSCALL_DEFINE1(light_evt_signal,
 {
 	int intensity;
 	struct light_event *cur;
-	if (get_user(intensity, &user_light_intensity->cur_intensity) != 0) {
+	if (get_user(intensity, &user_light_intensity->cur_intensity) != 0) 
 		return -EFAULT;
-	}
+
 	write_to_buffer(intensity);
 	spin_lock(&events_lock);
 	list_for_each_entry(cur, &events, event_list_head) {
@@ -142,5 +142,18 @@ SYSCALL_DEFINE1(light_evt_signal,
 
 SYSCALL_DEFINE1(light_evt_destroy, int, event_id) 
 {
-
+	struct light_event *cur;
+	spin_lock(&events_lock);
+	list_for_each_entry(cur, &events, event_list_head) {
+		if (cur->event_id == event_id) {
+			list_del(&cur->event_list_head);
+			spin_unlock(&events_lock);
+			wake_up_all(&cur->wq);
+			while(cur->ref_count > 0);
+			kfree(cur);
+			return 0;
+		}
+	}
+	spin_unlock(&events_lock);
+	return -EINVAL;
 }
