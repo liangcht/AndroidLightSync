@@ -7,6 +7,26 @@ static struct light_intensity last_light_intensity;
 static LIST_HEAD(events);
 static DEFINE_SPINLOCK(events_lock);
 static int id_count = 0;
+static int[WINDOW] buffer;
+static int buffer_index = 0;
+
+static void write_to_buffer(int intensity) {
+	buffer[buffer_index++] = intensity;
+	buffer_index %=	WINDOW;
+}
+
+static bool evaluate_condition(int intensity, int frequency) {
+	int i;
+	int counter;
+	counter = 0;
+	for(i = 0; i < WINDOW; i++) {
+		if (buffer[i] >= intensity - NOISE)
+			counter++;
+		if (counter == frequency)
+			return true;
+	}
+	return false;
+}
 
 SYSCALL_DEFINE1(set_light_intensity, 
 		struct light_intensity __user *, user_light_intensity)
@@ -43,7 +63,8 @@ SYSCALL_DEFINE1(light_evt_create,
 	init_waitqueue_head(&new_event->wq);
 	INIT_LIST_HEAD(&new_event->event_list_head);
 	new_event->ref_count = 0;
-	
+	new_event->condition = false;
+	spin_lock_init(&new_event->event_lock);
 	if (get_user(new_event->req_intensity, 
 		     &intensity_params->req_intensity) != 0) 
 		return -EFAULT;
@@ -62,7 +83,36 @@ SYSCALL_DEFINE1(light_evt_create,
 
 SYSCALL_DEFINE1(light_evt_wait, int, event_id)
 {
-
+	struct light_event *cur;
+	DEFINE_WAIT(wait);
+	spin_lock(&events_lock);
+	list_for_each_entry(cur, &events, event_list_head) {
+		if (cur->event_id == event_id) {
+			spin_unlock(&events_lock);
+			spin_lock(&cur->event_lock);
+			cur->ref_count++;
+			spin_unlock(&cur->event_lock);
+			while (1) {
+				spin_lock(&cur->event_lock);
+				prepare_to_wait(&cur->wq, 
+						&wait, 
+						TASK_UNINTERRUPTIBLE);
+				if (cur->condition){
+					spin_unlock(&cur->event_lock);
+					break;
+				}
+				spin_unlock(&cur->event_lock);
+				schedule();
+			}
+			finish_wait(&cur->wq, &wait);
+			spin_lock(&cur->event_lock);
+			cur->ref_count--;
+			spin_unlock(&cur->event_lock);
+			return 0;
+		}
+	}
+	spin_unlock(&events_lock);
+	return -EINVAL;
 }
 
 SYSCALL_DEFINE1(light_evt_signal, 
