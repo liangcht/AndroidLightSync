@@ -7,7 +7,7 @@ static struct light_intensity last_light_intensity;
 static LIST_HEAD(events);
 static DEFINE_SPINLOCK(events_lock);
 static int id_count = 0;
-static int[WINDOW] buffer;
+static int buffer[WINDOW];
 static int buffer_index = 0;
 
 static void write_to_buffer(int intensity) {
@@ -118,7 +118,25 @@ SYSCALL_DEFINE1(light_evt_wait, int, event_id)
 SYSCALL_DEFINE1(light_evt_signal, 
 		struct light_intensity __user *, user_light_intensity)
 {
-
+	int intensity;
+	struct light_event *cur;
+	if (get_user(intensity, &user_light_intensity->cur_intensity) != 0) {
+		return -EFAULT;
+	}
+	write_to_buffer(intensity);
+	spin_lock(&events_lock);
+	list_for_each_entry(cur, &events, event_list_head) {
+		spin_lock(&cur->event_lock);
+		if (evaluate_condition(cur->req_intensity, cur->frequency)) {
+			cur->condition = true;
+			wake_up_all(&cur->wq);
+		} else {
+			cur->condition = false;
+		}
+		spin_unlock(&cur->event_lock);
+	}
+	spin_unlock(&events_lock);
+	return 0;
 }
  
 
