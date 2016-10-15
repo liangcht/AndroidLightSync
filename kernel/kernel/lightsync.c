@@ -93,15 +93,16 @@ SYSCALL_DEFINE1(light_evt_wait, int, event_id)
 			cur->ref_count++;
 			spin_unlock(&cur->event_lock);
 			while (1) {
-				spin_lock(&cur->event_lock);
+				/* TODO : Do we need to hold event_lock here? */
+				//spin_lock(&cur->event_lock);
 				prepare_to_wait(&cur->wq, 
 						&wait, 
 						TASK_UNINTERRUPTIBLE);
 				if (cur->condition){
-					spin_unlock(&cur->event_lock);
+					//spin_unlock(&cur->event_lock);
 					break;
 				}
-				spin_unlock(&cur->event_lock);
+				//spin_unlock(&cur->event_lock);
 				schedule();
 			}
 			finish_wait(&cur->wq, &wait);
@@ -148,6 +149,9 @@ SYSCALL_DEFINE1(light_evt_destroy, int, event_id)
 		if (cur->event_id == event_id) {
 			list_del(&cur->event_list_head);
 			spin_unlock(&events_lock);
+			spin_lock(&cur->event_lock);
+			cur->condition = true;
+			spin_unlock(&cur->event_lock);
 			wake_up_all(&cur->wq);
 			while(cur->ref_count > 0);
 			kfree(cur);
