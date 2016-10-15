@@ -6,7 +6,10 @@
 #include <errno.h>
 #include <sys/wait.h>
 #include <sys/types.h>
+#include <signal.h>
 #include "light.h"
+void clean_events(int sig);
+int evt[3];
 
 int main (void)
 {
@@ -24,13 +27,14 @@ int main (void)
 	high.frequency = 10;
 
 	int n = 30;
-	int evt[3];	
+	//int evt[3];	
 	evt[0] = syscall(__NR_light_evt_create, &low);
 	evt[1] = syscall(__NR_light_evt_create, &medium);
 	evt[2] = syscall(__NR_light_evt_create, &high);
-	//printf("%d,\n %d,\n %d\n", evt[0], evt[1], evt3);
 	
 	pid_t pid[30];
+	signal(SIGALRM, clean_events);
+	alarm(60);
 	int i;
 	for (i = 0; i < n; i++) {
 		
@@ -55,8 +59,8 @@ int main (void)
 			exit(EXIT_SUCCESS);
 		}
 	}
-	sleep(5);
-	syscall(__NR_light_evt_destroy, evt[0]);
+
+
 	printf("finish creating children\n");
 	int status;
 	do {
@@ -64,5 +68,14 @@ int main (void)
 		printf("%d\n", n);
 	} while ((!WIFEXITED(status) && !WIFSIGNALED(status)) || --n > 0);
 	printf("finish while\n");
+	
+	
 	return 0;
+}
+
+void clean_events(int sig) {
+	printf("Begin destroying events...");
+	syscall(__NR_light_evt_destroy, evt[0]);
+	syscall(__NR_light_evt_destroy, evt[1]);
+	syscall(__NR_light_evt_destroy, evt[2]);
 }
