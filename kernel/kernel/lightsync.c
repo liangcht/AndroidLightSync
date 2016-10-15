@@ -153,7 +153,11 @@ SYSCALL_DEFINE1(light_evt_destroy, int, event_id)
 			cur->condition = true;
 			spin_unlock(&cur->event_lock);
 			wake_up_all(&cur->wq);
-			while(cur->ref_count > 0);
+			
+			while(cur->ref_count > 0) {
+				printk("REF_COUNT:%d \n", cur->ref_count);
+			}
+			
 			kfree(cur);
 			return 0;
 		}
