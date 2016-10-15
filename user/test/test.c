@@ -55,7 +55,7 @@ int main (void)
 			exit(EXIT_SUCCESS);
 		}
 	}
-	//sleep(5);
+	sleep(5);
 	syscall(__NR_light_evt_destroy, evt[0]);
 	printf("finish creating children\n");
 	int status;
