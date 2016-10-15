@@ -78,7 +78,7 @@ struct sigaltstack;
 #include <linux/quota.h>
 #include <linux/key.h>
 #include <trace/syscall.h>
-
+#include <linux/lightsync.h>
 /*
  * __MAP - apply a macro to syscall arguments
  * __MAP(n, m, t1, a1, t2, a2, ..., tn, an) will expand to
@@ -196,6 +196,13 @@ extern struct trace_event_functions exit_syscall_print_funcs;
 	}								\
 	SYSCALL_ALIAS(sys##name, SyS##name);				\
 	static inline long SYSC##name(__MAP(x,__SC_DECL,__VA_ARGS__))
+
+asmlinkage long sys_set_light_intensity(struct light_intensity __user *user_light_intensity);
+asmlinkage long sys_get_light_intensity(struct light_intensity __user *user_light_intensity);
+asmlinkage long sys_light_evt_create(struct event_requirements __user *intensity_params);
+asmlinkage long sys_light_evt_wait(int event_id);
+asmlinkage long sys_light_evt_signal(struct light_intensity __user *user_light_intensity);
+asmlinkage long sys_light_evt_destroy(int event_id);
 
 asmlinkage long sys_time(time_t __user *tloc);
 asmlinkage long sys_stime(time_t __user *tptr);

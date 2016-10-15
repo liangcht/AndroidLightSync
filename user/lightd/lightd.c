@@ -17,20 +17,44 @@
 #include <sys/stat.h>
 #include <sys/syscall.h>
 #include "light.h"
-
+/* Microsecond */
+#define TIME_INTERVAL 200000
 static int effective_sensor = -1;
 
 /* helper functions which you should use */
 static int open_sensors(struct sensors_module_t **hw_module,
 			struct sensors_poll_device_t **poll_device);
 static void enumerate_sensors(const struct sensors_module_t *sensors);
-static int poll_sensor_data_emulator(void);
+static float poll_sensor_data_emulator(void);
 static int poll_sensor_data(struct sensors_poll_device_t *sensors_device);
 
 
 void daemon_mode()
 {
-	/* TODO: fill in daemon implementation */
+	pid_t pid;
+	pid = fork();
+
+	if (pid < 0) {
+		exit(EXIT_FAILURE);
+	} else if (pid > 0) {
+		exit(EXIT_SUCCESS);
+	}
+
+	umask(0);
+	
+	pid_t sid;
+	sid = setsid();
+	if (sid < 0) {
+		exit(EXIT_FAILURE);
+	}
+
+	if ((chdir("/")) < 0) {
+		exit(EXIT_FAILURE);
+	}
+
+	close(STDIN_FILENO);
+	close(STDOUT_FILENO);
+	close(STDERR_FILENO);
 	return;
 }
 
@@ -42,7 +66,6 @@ int main(int argc, char **argv)
 	if (argv[1] && strcmp(argv[1], "-e") == 0)
 		goto emulation;
 
-	/* TODO: Implement your code to make this process a daemon in daemon_mode function */
 	daemon_mode();
 
 	printf("Opening sensors...\n");
@@ -57,7 +80,7 @@ int main(int argc, char **argv)
 	while (1) {	
 emulation:
 		poll_sensor_data(sensors_device);
-		/*TODO: Define the time interval and call usleep(); */
+		usleep(TIME_INTERVAL);
 	}
 
 	return EXIT_SUCCESS;
@@ -66,21 +89,29 @@ emulation:
 static int poll_sensor_data(struct sensors_poll_device_t *sensors_device)
 {
 	float cur_intensity = 0;
+	struct light_intensity cur_light_intensity;
 	if(effective_sensor < 0){
 	/* emulation */
 		cur_intensity = poll_sensor_data_emulator();
-		/*TODO: You have the intensity here - scale it and send it to your kernel */
+		cur_light_intensity.cur_intensity = cur_intensity * 100;
+		//syscall(__NR_set_light_intensity, &cur_light_intensity);
+		syscall(__NR_light_evt_signal, &cur_light_intensity);
 		printf("%f\n", cur_intensity);
 	}
 	else{
 		sensors_event_t buffer[128];
-		ssize_t count = sensors_device->poll(sensors_device, buffer, sizeof(buffer)/sizeof(buffer[0]));
+		ssize_t count;
+		count = sensors_device->poll(sensors_device, 
+					     buffer, 
+					     sizeof(buffer)/sizeof(buffer[0]));
 		int i;
 		for (i = 0; i < count; ++i) {
 			if (buffer[i].sensor != effective_sensor)
 				continue;
 			cur_intensity = buffer[i].light;
-			/*TODO: You have the intensity here - scale it and send it to your kernel */
+			cur_light_intensity.cur_intensity = cur_intensity * 100;
+			//syscall(__NR_set_light_intensity, &cur_light_intensity);
+			syscall(__NR_light_evt_signal, &cur_light_intensity);
 			printf("%f\n", cur_intensity);
 		}
 	}
@@ -94,7 +125,7 @@ static int poll_sensor_data(struct sensors_poll_device_t *sensors_device)
 
 
 
-static int poll_sensor_data_emulator(void)
+static float poll_sensor_data_emulator(void)
 {
 	float cur_intensity;
 	FILE *fp = fopen("/data/misc/intensity", "r");
