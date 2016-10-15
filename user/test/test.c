@@ -14,10 +14,10 @@ int main (void)
 	struct event_requirements medium;
 	struct event_requirements high;
 
-	low.req_intensity = 100*100;
+	low.req_intensity = 1000*100;
 	low.frequency = 10;
 
-	medium.req_intensity = 1000*100;
+	medium.req_intensity = 5000*100;
 	medium.frequency  = 10;
 
 	high.req_intensity = 10000*100;
@@ -35,13 +35,20 @@ int main (void)
 	for (i = 0; i < n; i++) {
 		
 		pid[i] = fork();
-
-
+		int cat = i % 3;
+	
 		if (pid[i] < 0) {
-
+			printf(strerror(errno));
 		} else if (pid[i] == 0) {
-			if (syscall(__NR_light_evt_wait, evt[i % 3]) == 0) {
-				printf("%d wake up from event %d!\n", i, i % 3);
+			if (syscall(__NR_light_evt_wait, evt[cat]) == 0) {
+				if (cat == 0) 
+					printf("%d detected a low intensity event\n",
+					getpid());
+				else if (cat == 1) 
+					printf("%d detected a medium intensity event\n", 
+					getpid());
+				else printf("%d detected a high intensity event\n",
+					getpid());
 			} else {
 				printf(strerror(errno));
 			}
@@ -53,6 +60,8 @@ int main (void)
 	int status;
 	do {
 		wait(&status);
-	} while ((!WIFEXITED(status) && !WIFSIGNALED(status)) || n-- > 0);
+	} while (--n > 0);
+	//while ((!WIFEXITED(status) && !WIFSIGNALED(status)) || --n > 0);
+	printf("finish while\n");
 	return 0;
 }
