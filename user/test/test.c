@@ -38,7 +38,7 @@ int main (void)
 		int cat = i % 3;
 	
 		if (pid[i] < 0) {
-			printf(strerror(errno));
+			printf("line 41: %s\n", strerror(errno));
 		} else if (pid[i] == 0) {
 			if (syscall(__NR_light_evt_wait, evt[cat]) == 0) {
 				if (cat == 0) 
@@ -50,18 +50,19 @@ int main (void)
 				else printf("%d detected a high intensity event\n",
 					getpid());
 			} else {
-				printf(strerror(errno));
+				printf("line 53: %s\n", strerror(errno));
 			}
 			exit(EXIT_SUCCESS);
 		}
 	}
-	sleep(5);
-	syscall(__NR_light_evt_destroy, evt[0]);	
+	//sleep(5);
+	syscall(__NR_light_evt_destroy, evt[0]);
+	printf("finish creating children\n");
 	int status;
 	do {
 		wait(&status);
-	} while (--n > 0);
-	//while ((!WIFEXITED(status) && !WIFSIGNALED(status)) || --n > 0);
+		printf("%d\n", n);
+	} while ((!WIFEXITED(status) && !WIFSIGNALED(status)) || --n > 0);
 	printf("finish while\n");
 	return 0;
 }
