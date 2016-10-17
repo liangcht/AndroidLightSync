@@ -9,7 +9,7 @@
 #include <signal.h>
 #include "light.h"
 void clean_events(int sig);
-int evt[3];
+static int evt[3];
 
 int main (void)
 {
@@ -26,15 +26,14 @@ int main (void)
 	high.req_intensity = 5000*100;
 	high.frequency = 10;
 
-	int n = 1000;
-	//int evt[3];	
+	int n = 1000;	
 	evt[0] = syscall(__NR_light_evt_create, &low);
 	evt[1] = syscall(__NR_light_evt_create, &medium);
 	evt[2] = syscall(__NR_light_evt_create, &high);
 	
 	pid_t pid[1000];
-	//signal(SIGALRM, clean_events);
-	//alarm(60);
+	signal(SIGALRM, clean_events);
+	alarm(60);
 	int i;
 	for (i = 0; i < n; i++) {
 		
@@ -59,9 +58,6 @@ int main (void)
 			exit(EXIT_SUCCESS);
 		}
 	}
-	sleep(5);
-	syscall(__NR_light_evt_destroy, evt[0]);
-
 	printf("finish creating children\n");
 	int status;
 	pid_t w_pid;
@@ -70,14 +66,6 @@ int main (void)
 		if (w_pid < 0 && errno == ECHILD) 
 			break;
 	}
-	//do {
-	//	w_pid = wait(&status);
-	//	printf("%d\n", n);
-	//} while ((!WIFEXITED(status) && !WIFSIGNALED(status)) || --n > 0);
-	//} (!(w_pid < 0 && errno == ECHILD))	 
-	printf("finish while\n");
-	
-	
 	return 0;
 }
 
