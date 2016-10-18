@@ -1,5 +1,5 @@
 #ifndef _LIGHTSYNC_H
-#define _LIGHTSYNC_H 
+#define _LIGHTSYNC_H
 /*
 Use this wrapper to pass the intensity to your system call
 */
@@ -12,12 +12,12 @@ Use this wrapper to pass the intensity to your system call
 #define WINDOW 20
 
 struct light_intensity {
-        int cur_intensity;
+	int cur_intensity;
 };
-  
+
 struct event_requirements {
-        int req_intensity;
-        int frequency;
+	int req_intensity;
+	int frequency;
 };
 
 struct light_event {

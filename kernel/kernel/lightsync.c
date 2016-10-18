@@ -6,20 +6,23 @@
 static struct light_intensity last_light_intensity;
 static LIST_HEAD(events);
 static DEFINE_SPINLOCK(events_lock);
-static int id_count = 0;
+static int id_count;
 static int buffer[WINDOW];
-static int buffer_index = 0;
+static int buffer_index;
 
-static void write_to_buffer(int intensity) {
+static void write_to_buffer(int intensity)
+{
 	buffer[buffer_index++] = intensity;
 	buffer_index %=	WINDOW;
 }
 
-static bool evaluate_condition(int intensity, int frequency) {
+static bool evaluate_condition(int intensity, int frequency)
+{
 	int i;
 	int counter;
 	counter = 0;
-	for(i = 0; i < WINDOW; i++) {
+
+	for (i = 0; i < WINDOW; i++) {
 		if (buffer[i] >= intensity - NOISE)
 			counter++;
 		if (counter == frequency)
@@ -28,36 +31,34 @@ static bool evaluate_condition(int intensity, int frequency) {
 	return false;
 }
 
-SYSCALL_DEFINE1(set_light_intensity, 
+SYSCALL_DEFINE1(set_light_intensity,
 		struct light_intensity __user *, user_light_intensity)
 {
-	if (get_user(last_light_intensity.cur_intensity, 
-		 &(user_light_intensity->cur_intensity)) != 0) {
-		return -EFAULT;
-	}
-	printk("Current light intensity %d\n", 
-	       last_light_intensity.cur_intensity);
-	return 0;
-}
-
-SYSCALL_DEFINE1(get_light_intensity, 
-		struct light_intensity __user *, user_light_intensity)
-{
-	if (put_user(last_light_intensity.cur_intensity, 
+	if (get_user(last_light_intensity.cur_intensity,
 		 &(user_light_intensity->cur_intensity)) != 0) {
 		return -EFAULT;
 	}
 	return 0;
 }
 
-SYSCALL_DEFINE1(light_evt_create, 
+SYSCALL_DEFINE1(get_light_intensity,
+		struct light_intensity __user *, user_light_intensity)
+{
+	if (put_user(last_light_intensity.cur_intensity,
+		 &(user_light_intensity->cur_intensity)) != 0) {
+		return -EFAULT;
+	}
+	return 0;
+}
+
+SYSCALL_DEFINE1(light_evt_create,
 		struct event_requirements __user *, intensity_params)
 {
 	struct light_event *new_event;
 	new_event = (struct light_event *)
-		kmalloc(sizeof(struct light_event), GFP_KERNEL); 
-	
-	if (new_event == NULL) 
+		kmalloc(sizeof(struct light_event), GFP_KERNEL);
+
+	if (new_event == NULL)
 		return -ENOMEM;
 
 	init_waitqueue_head(&new_event->wq);
@@ -65,16 +66,16 @@ SYSCALL_DEFINE1(light_evt_create,
 	new_event->ref_count = 0;
 	new_event->condition = false;
 	spin_lock_init(&new_event->event_lock);
-	if (get_user(new_event->req_intensity, 
-		     &intensity_params->req_intensity) != 0) 
+	if (get_user(new_event->req_intensity,
+		     &intensity_params->req_intensity) != 0)
 		return -EFAULT;
 
-	if (get_user(new_event->frequency, &intensity_params->frequency) != 0) 
+	if (get_user(new_event->frequency, &intensity_params->frequency) != 0)
 		return -EFAULT;
 
-	new_event->frequency = 
+	new_event->frequency =
 		(new_event->frequency > WINDOW) ? WINDOW : new_event->frequency;
-	spin_lock(&events_lock);	
+	spin_lock(&events_lock);
 	new_event->event_id = id_count++;
 	list_add(&new_event->event_list_head, &events);
 	spin_unlock(&events_lock);
@@ -93,16 +94,11 @@ SYSCALL_DEFINE1(light_evt_wait, int, event_id)
 			cur->ref_count++;
 			spin_unlock(&cur->event_lock);
 			while (1) {
-				/* TODO : Do we need to hold event_lock here? */
-				//spin_lock(&cur->event_lock);
-				prepare_to_wait(&cur->wq, 
-						&wait, 
+				prepare_to_wait(&cur->wq,
+						&wait,
 						TASK_UNINTERRUPTIBLE);
-				if (cur->condition){
-					//spin_unlock(&cur->event_lock);
+				if (cur->condition)
 					break;
-				}
-				//spin_unlock(&cur->event_lock);
 				schedule();
 			}
 			finish_wait(&cur->wq, &wait);
@@ -116,12 +112,12 @@ SYSCALL_DEFINE1(light_evt_wait, int, event_id)
 	return -EINVAL;
 }
 
-SYSCALL_DEFINE1(light_evt_signal, 
+SYSCALL_DEFINE1(light_evt_signal,
 		struct light_intensity __user *, user_light_intensity)
 {
 	int intensity;
 	struct light_event *cur;
-	if (get_user(intensity, &user_light_intensity->cur_intensity) != 0) 
+	if (get_user(intensity, &user_light_intensity->cur_intensity) != 0)
 		return -EFAULT;
 
 	write_to_buffer(intensity);
@@ -139,9 +135,9 @@ SYSCALL_DEFINE1(light_evt_signal,
 	spin_unlock(&events_lock);
 	return 0;
 }
- 
 
-SYSCALL_DEFINE1(light_evt_destroy, int, event_id) 
+
+SYSCALL_DEFINE1(light_evt_destroy, int, event_id)
 {
 	struct light_event *cur;
 	spin_lock(&events_lock);
@@ -149,15 +145,12 @@ SYSCALL_DEFINE1(light_evt_destroy, int, event_id)
 		if (cur->event_id == event_id) {
 			list_del(&cur->event_list_head);
 			spin_unlock(&events_lock);
-			spin_lock(&cur->event_lock);
-			cur->condition = true;
-			spin_unlock(&cur->event_lock);
-			wake_up_all(&cur->wq);
-			
-			while(cur->ref_count > 0) {
-				printk("REF_COUNT:%d \n", cur->ref_count);
+			while (cur->ref_count > 0) {
+				spin_lock(&cur->event_lock);
+				cur->condition = true;
+				spin_unlock(&cur->event_lock);
+				wake_up_all(&cur->wq);
 			}
-			
 			kfree(cur);
 			return 0;
 		}

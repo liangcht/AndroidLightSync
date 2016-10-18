@@ -29,28 +29,25 @@ static float poll_sensor_data_emulator(void);
 static int poll_sensor_data(struct sensors_poll_device_t *sensors_device);
 
 
-void daemon_mode()
+void daemon_mode(void)
 {
 	pid_t pid;
 	pid = fork();
 
-	if (pid < 0) {
+	if (pid < 0)
 		exit(EXIT_FAILURE);
-	} else if (pid > 0) {
+	else if (pid > 0)
 		exit(EXIT_SUCCESS);
-	}
 
 	umask(0);
-	
+
 	pid_t sid;
 	sid = setsid();
-	if (sid < 0) {
+	if (sid < 0)
 		exit(EXIT_FAILURE);
-	}
 
-	if ((chdir("/")) < 0) {
+	if ((chdir("/")) < 0)
 		exit(EXIT_FAILURE);
-	}
 
 	close(STDIN_FILENO);
 	close(STDOUT_FILENO);
@@ -77,7 +74,7 @@ int main(int argc, char **argv)
 	enumerate_sensors(sensors_module);
 
 	printf("turn me into a daemon!\n");
-	while (1) {	
+	while (1) {
 emulation:
 		poll_sensor_data(sensors_device);
 		usleep(TIME_INTERVAL);
@@ -90,19 +87,19 @@ static int poll_sensor_data(struct sensors_poll_device_t *sensors_device)
 {
 	float cur_intensity = 0;
 	struct light_intensity cur_light_intensity;
-	if(effective_sensor < 0){
-	/* emulation */
+
+	if (effective_sensor < 0) {
+		/* emulation */
 		cur_intensity = poll_sensor_data_emulator();
 		cur_light_intensity.cur_intensity = cur_intensity * 100;
 		syscall(__NR_set_light_intensity, &cur_light_intensity);
 		syscall(__NR_light_evt_signal, &cur_light_intensity);
 		printf("%f\n", cur_intensity);
-	}
-	else{
+	} else {
 		sensors_event_t buffer[128];
 		ssize_t count;
-		count = sensors_device->poll(sensors_device, 
-					     buffer, 
+		count = sensors_device->poll(sensors_device,
+					     buffer,
 					     sizeof(buffer)/sizeof(buffer[0]));
 		int i;
 		for (i = 0; i < count; ++i) {
@@ -130,7 +127,7 @@ static float poll_sensor_data_emulator(void)
 	float cur_intensity;
 	FILE *fp = fopen("/data/misc/intensity", "r");
 	if (!fp)
-	return 0;       
+		return 0;       
 	fscanf(fp, "%f", &cur_intensity);
 	fclose(fp);
 	return cur_intensity;
